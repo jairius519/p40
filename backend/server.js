@@ -1,113 +1,54 @@
-require('dotenv').config(); // Load environment variables
-const express = require('express');
-const cors = require('cors');
-const mongoose= require ('mongoose');
-const { MongoClient, ServerApiVersion } = require('mongodb');
+require("dotenv").config();
+const express = require("express");
+const cors = require("cors");
+const mongoose = require("mongoose");
+const dogRoutes = require("./routes/dogsRoute");
+const userRoutes = require("./routes/userRoute");
+const schedulewalk = require("./routes/walkRoute");
+const completedWalk = require("./routes/BookedRoute");
+const marshalApp = require("./routes/marshalAppRoute");
+const waiver = require("./routes/waiverRoute");
+const review = require("./routes/reviewRoute");
+const adoptionRoutes = require("./routes/adoptionRoute");
+const settings = require("./routes/settingsRoute");
 
-// Initialize Express app
 const app = express();
-const PORT = process.env.PORT || 5001; 
+const PORT = process.env.PORT || 5001;
 
 // Middleware
-app.use(cors());
+app.use(
+	cors({
+		origin: `${process.env.FRONTEND_URL}`,
+		credentials: true,
+	})
+);
 app.use(express.json());
 
-// MongoDB Connection URI
-const uri = process.env.MONGO_URI;
-const client = new MongoClient(uri, {
-  serverApi: {
-    version: ServerApiVersion.v1,
-    strict: true,
-    deprecationErrors: true,
-  },
-});
-
-// Function to connect to MongoDB
+// MongoDB Connection
 async function connectToDatabase() {
-  try {
-    await client.connect();
-    console.log('Connected to MongoDB!');
-  } catch (err) {
-    console.error('MongoDB connection error:', err);
-    process.exit(1);
-  }
+	try {
+		await mongoose.connect(process.env.MONGO_URI);
+		console.log("Connected to MongoDB using Mongoose!");
+	} catch (err) {
+		console.error("MongoDB connection error:", err);
+		process.exit(1);
+	}
 }
 
-// Route to get all dogs
-app.get('/dogs', async (req, res) => {
-  try {
-    const db = client.db('p40Project'); 
-    const collection = db.collection('dogs');
-    const data = await collection.find({}).toArray();
-    res.json(data);
-  } catch (error) {
-    console.error('Error fetching data:', error);
-    res.status(500).json({ error: 'Failed to fetch data' });
-  }
-});
+// Routes
+app.use("/users", userRoutes);
+app.use("/dogs", dogRoutes);
+app.use("/adoptions", adoptionRoutes);
+app.use("/scheduledWalks", schedulewalk);
+app.use("/completedWalk", completedWalk);
+app.use("/marshalApps", marshalApp);
+app.use("/waiver", waiver);
+app.use("/review", review);
 
-// Route to add a new dog
-app.post('/dogs', async (req, res) => {
-  try {
-    const db = client.db('p40Project');
-    const collection = db.collection('dogs');
+app.use("/settings", settings);
 
-    const newDog = req.body;
-    const result = await collection.insertOne(newDog);
-
-    res.status(201).json({ ...newDog, _id: result.insertedId });
-  } catch (error) {
-    console.error('Error adding dog:', error);
-    res.status(500).json({ error: 'Failed to add dog' });
-  }
-});
-
-
-// Route to add a new dog
-app.put('/dogs/:id', async (req, res) => {
-  try {
-    const {id}= req.params;
-    const db = client.db('p40Project');
-    const collection = db.collection('dogs');
-
-    const newDog = req.body;
-    const result = await collection.insertOne(newDog);
-
-    res.status(201).json({ ...newDog, _id: result.insertedId });
-  } catch (error) {
-    console.error('Error adding dog:', error);
-    res.status(500).json({ error: 'Failed to add dog' });
-  }
-});
-
-
-// DELETE route to delete a dog by its _id using MongoDB's native client
-app.delete('/dogs/:id', async (req, res) => {
-  try {
-    const { id } = req.params;
-    console.log(`Tried to delete a dog with id ${id}`);
-console.log("times")
-    // Validate that the id is a valid ObjectId
-    const objectId = new mongoose.Types.ObjectId(id);
-
-    const db = client.db('p40Project'); // Use the same database as in POST
-    const collection = db.collection('dogs');
-
-    const result = await collection.deleteOne({ _id: objectId });
-
-    if (result.deletedCount === 0) {
-      return res.status(404).json({ message: 'Dog not found' });
-    }
-
-    res.status(200).json({ message: 'Dog deleted successfully' });
-  } catch (error) {
-    console.error('Error deleting dog:', error);
-    res.status(500).json({ error: 'Failed to delete dog' });
-  }
-});
-
-// Start the server
+// Start the Server
 app.listen(PORT, async () => {
-  console.log(`Server is running on http://localhost:${PORT}`);
-  await connectToDatabase();
+	console.log(`Server is running on http://localhost:${PORT}`);
+	await connectToDatabase();
 });
