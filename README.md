@@ -50,9 +50,8 @@ You can also use a version control platform such as GitHub; others can view it.
 
 Install my-project with npm
 
-"`bash
-  npm install my-project
-  cd my-project
-```"
+```bash
+  cd p-40-underdogs
+  npm install
 
 
